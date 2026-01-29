@@ -182,5 +182,16 @@ class Program(HiveCoreItem):
     def delete(self) -> None:
         self.hive_client.delete_program(self.id)
 
+    def create_subject(
+        self,
+        symbol: str,
+        name: str,
+        color: str,
+        segel_brief: str = "",
+    ) -> Subject:
+        return self.hive_client.create_subject(
+            symbol=symbol, name=name, program=self, color=color, segel_brief=segel_brief
+        )
+
 
 ProgramLike = TypeVar("ProgramLike", Program, int)

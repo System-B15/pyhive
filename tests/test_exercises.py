@@ -1,7 +1,9 @@
+from typing import Literal
+
 import pytest
 
 from pyhive.client import HiveClient
-from pyhive.types import Exercise
+from pyhive.types import Exercise, Module, Program, Subject
 
 
 def test_get_exercises(client: HiveClient):
@@ -30,7 +32,15 @@ def test_get_exercise_by_id(client: HiveClient):
     ],
 )
 def test_get_exercises_by_parent(
-    client: HiveClient, getter_name, filter_arg, attr_name
+    client: HiveClient,
+    getter_name: Literal["get_modules"] | Literal["get_subjects"],
+    filter_arg: (
+        Literal["parent_module__id"]
+        | Literal["parent_module"]
+        | Literal["parent_module__parent_subject__id"]
+        | Literal["parent_subject"]
+    ),
+    attr_name: Literal["parent_module_id"] | Literal["parent_subject_id"],
 ):
     items = list(getattr(client, getter_name)())
     if not items:
@@ -68,7 +78,9 @@ def test_get_exercises_by_nonexistent_name(client: HiveClient):
         ("subject", "parent_subject", "parent_module__parent_subject__id"),
     ],
 )
-def test_exercises_conflict(client: HiveClient, conflict_case):
+def test_exercises_conflict(
+    client: HiveClient, conflict_case: Literal["module"] | Literal["subject"]
+):
     name, obj_arg, id_arg = conflict_case
     items = list(getattr(client, f"get_{name}s")())
     if not items:
@@ -77,3 +89,43 @@ def test_exercises_conflict(client: HiveClient, conflict_case):
 
     with pytest.raises(AssertionError):
         list(client.get_exercises(**{obj_arg: item, id_arg: item.id + 1}))
+
+
+def test_get_exercises_from_program(client: HiveClient, large_program: Program):
+    exercises: list[Exercise] = []
+    for subject in large_program:
+        assert isinstance(subject, Subject)
+        for module in subject:
+            assert isinstance(module, Module)
+            for exercise in module:
+                assert isinstance(exercise, Exercise)
+                assert exercise.parent_module == module
+                assert exercise.parent_module.parent_subject == subject
+                assert (
+                    exercise.parent_module.parent_subject.parent_program
+                    == large_program
+                )
+                exercises.append(exercise)
+    expected_exercises = list(
+        client.get_exercises(
+            parent_module__parent_subject__parent_program__id__in=[large_program.id]
+        )
+    )
+    assert (
+        len(exercises) > 0 and len(expected_exercises) > 0
+    ), "No exercises found in large program!"
+
+    assert len(exercises) == len(expected_exercises)
+
+    exercises.sort()
+    expected_exercises.sort()
+
+    for i in range(len(exercises)):
+        assert exercises[i] == expected_exercises[i]
+        assert exercises[i].name == expected_exercises[i].name
+        assert exercises[i].parent_module_id == expected_exercises[i].parent_module_id
+        assert exercises[i].parent_subject_id == expected_exercises[i].parent_subject_id
+        assert (
+            exercises[i].parent_subject_symbol
+            == expected_exercises[i].parent_subject_symbol
+        )

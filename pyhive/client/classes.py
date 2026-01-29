@@ -4,14 +4,15 @@ Class resource mixin for HiveClient.
 Provides listing and retrieval of Class records from the Hive API. Use only as a mixin for the main HiveClient.
 """
 
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Iterable, Optional, Sequence
 
-from ..src.types.class_ import Class, ClassLike
+from ..src.types.class_ import Class
 from ..src.types.enums.class_type_enum import ClassTypeEnum
 from .client_shared import ClientCoreMixin
 from .utils import resolve_item_or_id
 
 if TYPE_CHECKING:
+    from ..src.types.class_ import ClassLike
     from ..src.types.program import ProgramLike
     from ..src.types.user import UserLike
 
@@ -57,8 +58,10 @@ class ClassesClientMixin(ClientCoreMixin):
         from ..client import HiveClient
 
         assert isinstance(self, HiveClient), "self must be an instance of HiveClient"
+        data = self.get(f"/api/core/management/classes/{class_id}/")
+        assert isinstance(data, dict)
         return Class.from_dict(
-            self.get(f"/api/core/management/classes/{class_id}/"),
+            data,
             hive_client=self,
         )
 
@@ -106,3 +109,41 @@ class ClassesClientMixin(ClientCoreMixin):
 
     def delete_class(self, class_: "ClassLike") -> None:
         self.delete(f"/api/core/management/classes/{resolve_item_or_id(class_)}/")
+
+    def update_class(
+        self,
+        class_: Class,
+        *,
+        users_from_classes: Optional[Sequence["ClassLike"]] = None,
+    ) -> Class:
+        from ..client import HiveClient
+
+        assert isinstance(self, HiveClient), "self must be an instance of HiveClient"
+
+        assert isinstance(class_.type_, ClassTypeEnum), "Class must have a valid type!"
+
+        data = self.put(
+            f"/api/core/management/classes/{class_.id}/",
+            {
+                "name": class_.name,
+                "program": class_.program_id,
+                "users": class_.user_ids,
+                "email": class_.email,
+                "type": class_.type_.value,
+                "description": class_.description,
+                "classes": (
+                    []
+                    if users_from_classes is None
+                    else [resolve_item_or_id(x) for x in users_from_classes]
+                ),
+            },
+        )
+        return Class.from_dict(data, hive_client=self)
+
+    def import_users_to_class(
+        self, to_class: "ClassLike", from_classes: Sequence["ClassLike"]
+    ) -> Class:
+        to_class_data = (
+            to_class if isinstance(to_class, Class) else self.get_class(to_class)
+        )
+        return self.update_class(to_class_data, users_from_classes=from_classes)

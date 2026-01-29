@@ -1,3 +1,5 @@
+from typing import Literal, LiteralString
+
 import pytest
 
 from pyhive.client import HiveClient
@@ -43,13 +45,21 @@ def test_get_subjects_by_nonexistent_name(client: HiveClient):
         ("parent_program", "parent_program_id"),
     ],
 )
-def test_get_subjects_by_parent_program(client: HiveClient, filter_arg, attr_name):
+def test_get_subjects_by_parent_program(
+    client: HiveClient,
+    filter_arg: Literal["parent_program__id__in"] | Literal["parent_program"],
+    attr_name: Literal["parent_program_id"],
+):
     all_programs = list(client.get_programs())
     if not all_programs:
         pytest.skip("No programs available for parent_program tests.")
     program = all_programs[0]
     value = [program.id] if filter_arg.endswith("__in") else program
-    filtered = list(client.get_subjects(**{filter_arg: value}))
+    filtered = list(
+        client.get_subjects(
+            **{filter_arg: value}  # pyright: ignore[reportArgumentType]
+        )
+    )
     assert (
         all(getattr(s, attr_name) == program.id for s in filtered) or len(filtered) == 0
     )
@@ -101,7 +111,22 @@ def test_subjects_both_program_filters_match_allowed(client: HiveClient):
     ],
 )
 def test_create_subject(
-    client: HiveClient, program: Program, symbol, name, color, segel_brief
+    client: HiveClient,
+    program: Program,
+    symbol: LiteralString | Literal["MATH"] | Literal["SCI"] | Literal["PHY"],
+    name: (
+        Literal["Mathematics"]
+        | Literal["Science"]
+        | Literal["LongSymbol"]
+        | Literal["Physics"]
+    ),
+    color: (
+        Literal["#FF0000"]
+        | Literal["#00FF00"]
+        | Literal["#ABCDEF"]
+        | Literal["#FFEEAA"]
+    ),
+    segel_brief: LiteralString | Literal[""] | Literal["Excellent progress"],
 ):
     subject = client.create_subject(
         symbol=symbol, name=name, program=program, color=color, segel_brief=segel_brief
@@ -122,7 +147,12 @@ def test_create_subject(
 def test_create_subject_invalid_program(client: HiveClient):
     """Passing invalid program object should raise an assertion or HTTP error."""
     with pytest.raises((AssertionError, TypeError)):
-        client.create_subject("MATH", "Math", program=None, color="#FFFFFF")
+        client.create_subject(
+            "MATH",
+            "Math",
+            program=None,  # pyright: ignore[reportArgumentType]
+            color="#FFFFFF",
+        )
 
 
 # --- Delete Subject Tests ---
@@ -144,9 +174,11 @@ def test_delete_subject_invalid_input(client: HiveClient):
     with pytest.raises(Exception):
         client.delete_subject(999999)  # Likely 404
     with pytest.raises(AssertionError):
-        client.delete_subject(None)
+        client.delete_subject(None)  # pyright: ignore[reportArgumentType]
     with pytest.raises(TypeError):
-        client.delete_subject("invalid_type")  # Not a Subject or ID
+        client.delete_subject(
+            "invalid_type"  # pyright: ignore[reportArgumentType]
+        )  #  # Not a Subject or ID
 
 
 def test_delete_subject_twice(client: HiveClient, program: Program):

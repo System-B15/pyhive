@@ -4,11 +4,13 @@ Represents a logical course module within a subject, supporting serialization,
 lazy loading of parent subject, and retrieval of exercises.
 """
 
-from collections.abc import Generator, Mapping
-from typing import TYPE_CHECKING, Any, Iterable, Self, TypeVar, cast
+from typing import (TYPE_CHECKING, Any, Generator, Iterable, Mapping, Optional,
+                    Self, TypeVar, cast)
 
 from attrs import define, field
 
+from .enums.exercise_patbas_enum import PatbasEnum
+from .enums.exercise_preview_types import ExercisePreviewTypes
 from .enums.sync_status_enum import SyncStatusEnum
 from .exercise import Exercise
 from .program import HiveCoreItem
@@ -135,6 +137,47 @@ class Module(HiveCoreItem):
                 self.id,
                 self.parent_subject_id,
             )
+        )
+
+    def delete(self) -> None:
+        self.hive_client.delete_module(self)
+
+    def create_exercise(
+        self,
+        name: str,
+        order: int,
+        *,
+        download: bool = False,
+        preview: ExercisePreviewTypes = ExercisePreviewTypes.DISABLED,
+        patbas_preview: ExercisePreviewTypes = ExercisePreviewTypes.DISABLED,
+        style: str = "",
+        patbas_download: bool = False,
+        patbas: PatbasEnum = PatbasEnum.NEVER,
+        on_creation_data: str = "",
+        autocheck_tag: str = "",
+        autodone: bool = False,
+        expected_duration: str = "",
+        segel_brief: str = "",
+        is_lecture: bool = False,
+        tags: Optional[list[str]] = None,
+    ) -> Exercise:
+        return self.hive_client.create_exercise(
+            name=name,
+            order=order,
+            parent_module=self,
+            download=download,
+            preview=preview,
+            patbas_preview=patbas_preview,
+            style=style,
+            patbas_download=patbas_download,
+            patbas=patbas,
+            on_creation_data=on_creation_data,
+            autocheck_tag=autocheck_tag,
+            autodone=autodone,
+            expected_duration=expected_duration,
+            segel_brief=segel_brief,
+            is_lecture=is_lecture,
+            tags=tags,
         )
 
 

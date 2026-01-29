@@ -3,10 +3,8 @@
 Provides listing and retrieval of user records from the management API.
 """
 
-from typing import TYPE_CHECKING, Any, Generator, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Iterable, Optional, cast
 
-from pyhive.src.types.assignment import Assignment
-from pyhive.src.types.common import UNSET, Unset
 from pyhive.src.types.enums.gender_enum import GenderEnum
 from pyhive.src.types.enums.status_enum import StatusEnum
 
@@ -35,7 +33,7 @@ class UserClientMixin(ClientCoreMixin):
         mentor__id__in: Optional[list[int]] = None,
         program__id__in: Optional[list[int]] = None,
         program_checker__id__in: Optional[list[int]] = None,
-    ) -> Generator[User, None, None]:
+    ) -> Iterable[User]:
         """Yield users filtered by the provided criteria."""
         from ..client import HiveClient
 
@@ -60,7 +58,7 @@ class UserClientMixin(ClientCoreMixin):
         assert isinstance(self, HiveClient), "self must be an instance of HiveClient"
 
         return User.from_dict(
-            self.get(f"/api/core/management/users/{user_id}/"),
+            cast(dict[str, Any], self.get(f"/api/core/management/users/{user_id}/")),
             hive_client=self,
         )
 
@@ -177,7 +175,7 @@ class UserClientMixin(ClientCoreMixin):
 
         return students_perfect_match[0] if len(students_perfect_match) == 1 else None
 
-    def create_user(
+    def create_user( # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
         self,
         username: str,
         password: str,
@@ -254,6 +252,21 @@ class UserClientMixin(ClientCoreMixin):
         if hostname is not None:
             payload["hostname"] = hostname
 
+        # To comply with Hive's "hanich_required_fields" constraint
+        if payload.get("clearance", None) != ClearanceEnum.HANICH and (
+            any(payload.get(k, None) is not None for k in ("number", "program"))
+            or payload.get("teacher", False)
+        ):
+            raise TypeError(
+                "A user which is not a HANICH must not be associated with a program, nor have a number, nor be a teacher!" # pylint: disable=line-too-long
+            )
+        if payload.get("clearance", None) == ClearanceEnum.HANICH and (
+            any(payload.get(k, None) is None for k in ("number", "program"))
+        ):
+            raise TypeError(
+                "A user which is a HANICH must be associated with a program and have a number!"
+            )
+
         response = self.post("/api/core/management/users/", payload)
 
         return User.from_dict(response, hive_client=self)
@@ -319,3 +332,8 @@ class UserClientMixin(ClientCoreMixin):
             ),
             hive_client=self,
         )
+
+    def set_users_queue(self, user: "UserLike", queue: "QueueLike") -> User:
+        full_user = user if isinstance(user, User) else self.get_user(user)
+        full_user.queue_id = resolve_item_or_id(queue)
+        return self.update_user(full_user)

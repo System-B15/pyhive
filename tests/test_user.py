@@ -49,7 +49,7 @@ def test_create_students(client: HiveClient, mentor: User, program: Program):
             client.delete_user(existing)
 
         # Create fresh user
-        user = client.create_user(
+        user:User|None = client.create_user(
             username=student["username"],
             password=password,
             clearance=ClearanceEnum.HANICH,

@@ -1,6 +1,6 @@
 """Model for exercises in course modules."""
 
-from typing import TYPE_CHECKING, Any, Generator, Self, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Self, TypeVar, cast
 
 from attrs import define, field
 
@@ -142,7 +142,7 @@ class Exercise(HiveCoreItem):
         return result
 
     @classmethod
-    def from_dict(cls, src_dict: dict[str, Any], hive_client: "HiveClient") -> Self:
+    def from_dict(cls, src_dict: Mapping[str, Any], hive_client: "HiveClient") -> Self:
         """Deserialize Exercise from dictionary."""
         d = dict(src_dict)
 
@@ -192,7 +192,7 @@ class Exercise(HiveCoreItem):
             return NotImplemented
         return self.order < value.order
 
-    def get_assignments(self) -> Generator["Assignment", None, None]:
+    def get_assignments(self) -> Iterable["Assignment"]:
         """Fetch all assignments associated with this exercise."""
         return self.hive_client.get_assignments(
             exercise__id=self.id,
@@ -200,7 +200,7 @@ class Exercise(HiveCoreItem):
             exercise__parent_module__parent_subject__id=self.parent_subject_id,
         )
 
-    def __iter__(self) -> Generator["Assignment", None, None]:
+    def __iter__(self) -> Iterable["Assignment"]:
         """Allow iteration over this Exercise to yield its assignments."""
         yield from self.get_assignments()
 
@@ -212,6 +212,9 @@ class Exercise(HiveCoreItem):
                 self.parent_subject_id,
             )
         )
+
+    def delete(self) -> None:
+        self.hive_client.delete_exercise(self)
 
 
 ExerciseLike = TypeVar("ExerciseLike", Exercise, int)

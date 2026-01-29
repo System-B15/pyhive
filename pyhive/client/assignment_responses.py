@@ -5,9 +5,14 @@ Provides methods for listing and retrieving AssignmentResponse records for a giv
 through the Hive API. Intended only for use as a mixin on HiveClient.
 """
 
+from typing import TYPE_CHECKING, Any, cast
+
 from ..src.types.assignment_response import AssignmentResponse
 from .client_shared import ClientCoreMixin
 from .utils import resolve_item_or_id
+
+if TYPE_CHECKING:
+    from ..src.types.assignment import AssignmentLike
 
 
 class AssignmentResponsesClientMixin(ClientCoreMixin):
@@ -22,7 +27,7 @@ class AssignmentResponsesClientMixin(ClientCoreMixin):
         Retrieve one assignment response by id for a given assignment.
     """
 
-    def get_assignment_responses(self, assignment):
+    def get_assignment_responses(self, assignment: "AssignmentLike"):
         """Yield assignment responses for the provided ``assignment`` (id or instance)."""
         assignment_id = resolve_item_or_id(assignment)
         return self._get_core_items(
@@ -31,7 +36,7 @@ class AssignmentResponsesClientMixin(ClientCoreMixin):
             assignment_id=assignment_id,
         )
 
-    def get_assignment_response(self, assignment, response_id: int):
+    def get_assignment_response(self, assignment: "AssignmentLike", response_id: int):
         """Return a single response by ``response_id`` for the given ``assignment``."""
         from ..client import HiveClient
 
@@ -39,7 +44,12 @@ class AssignmentResponsesClientMixin(ClientCoreMixin):
 
         assignment_id = resolve_item_or_id(assignment)
         return AssignmentResponse.from_dict(
-            self.get(f"/api/core/assignments/{assignment_id}/responses/{response_id}/"),
+            cast(
+                dict[str, Any],
+                self.get(
+                    f"/api/core/assignments/{assignment_id}/responses/{response_id}/"
+                ),
+            ),
             assignment_id=assignment_id,
             hive_client=self,
         )

@@ -9,10 +9,12 @@ from pyhive.src.types.assignment_response import AssignmentResponse
 from pyhive.src.types.class_ import Class
 from pyhive.src.types.enums.clearance_enum import ClearanceEnum
 from pyhive.src.types.enums.gender_enum import GenderEnum
+from pyhive.src.types.enums.status_enum import StatusEnum
 from pyhive.src.types.exercise import Exercise
 from pyhive.src.types.form_field import FormField
 from pyhive.src.types.module import Module
 from pyhive.src.types.program import Program
+from pyhive.src.types.queue import Queue
 from pyhive.src.types.subject import Subject
 from pyhive.src.types.user import User
 
@@ -28,4 +30,6 @@ __all__ = [
     "Program",
     "ClearanceEnum",
     "GenderEnum",
+    "StatusEnum",
+    "Queue",
 ]

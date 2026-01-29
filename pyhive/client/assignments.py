@@ -109,7 +109,9 @@ class AssignmentClientMixin(ClientCoreMixin):
         from ..client import HiveClient
 
         assert isinstance(self, HiveClient), "self must be an instance of HiveClient"
+        data = self.get(f"/api/core/assignments/{assignment_id}/")
+        assert isinstance(data, dict)
         return Assignment.from_dict(
-            self.get(f"/api/core/assignments/{assignment_id}/"),
+            data,
             hive_client=self,
         )

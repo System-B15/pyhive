@@ -113,4 +113,11 @@ class Class(HiveCoreItem):
             return False
         return self.id == value.id and self.program_id == value.program_id
 
+    def delete(self) -> None:
+        self.hive_client.delete_class(self)
+
+    def update(self) -> None:
+        self.hive_client.update_class(self)
+
+
 ClassLike = TypeVar("ClassLike", Class, int)

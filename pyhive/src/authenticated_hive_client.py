@@ -217,7 +217,7 @@ class AuthenticatedHiveClient:
 
     def get(
         self, endpoint: str, params: httpx.QueryParams | None = None
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | list[Any]:
         """High-level GET that returns parsed JSON from the response.
 
         This calls the decorated ``_get`` helper and returns its JSON body.
@@ -229,6 +229,7 @@ class AuthenticatedHiveClient:
         """High-level POST that returns parsed JSON from the response.
 
         The ``data`` dict is JSON-encoded for the request body.
+
         Raises an exception with response JSON included for HTTP 400.
         """
         try:
@@ -239,14 +240,14 @@ class AuthenticatedHiveClient:
             if exc.response.status_code == 400:
                 try:
                     error_json = exc.response.json()
-                except Exception:
+                except Exception: # pylint: disable=broad-except
                     error_json = exc.response.text
                 raise ValueError(f"HTTP 400 Error: {error_json}") from exc
             # Otherwise, re-raise the original HTTP error
             raise
         return resp.json()
 
-    def delete(self, endpoint: str, force: bool = False) -> None:
+    def delete(self, endpoint: str, force: bool = False) -> None: # pylint: disable=unused-argument
         response = self._delete(endpoint)
         if response.status_code != httpx.codes.NO_CONTENT.value:  # 204 No response body
             raise RuntimeError("Failed to delete!")

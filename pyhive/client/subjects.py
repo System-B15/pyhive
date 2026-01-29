@@ -61,8 +61,10 @@ class SubjectClientMixin(ClientCoreMixin):
         from ..client import HiveClient
 
         assert isinstance(self, HiveClient), "self must be an instance of HiveClient"
+        data = self.get(f"/api/core/course/subjects/{subject_id}/")
+        assert isinstance(data, dict)
         return Subject.from_dict(
-            self.get(f"/api/core/course/subjects/{subject_id}/"),
+            data,
             hive_client=self,
         )
 

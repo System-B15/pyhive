@@ -3,8 +3,17 @@
 Provides retrieval of queue records.
 """
 
+from typing import TYPE_CHECKING, Any, Optional, cast
+
+from pyhive.client.utils import resolve_item_or_id
+
 from ..src.types.queue import Queue
 from .client_shared import ClientCoreMixin
+
+if TYPE_CHECKING:
+    from ..src.types.module import ModuleLike
+    from ..src.types.user import UserLike
+    from ..src.types.queue import QueueLike
 
 
 class QueuesClientMixin(ClientCoreMixin):
@@ -16,6 +25,37 @@ class QueuesClientMixin(ClientCoreMixin):
 
         assert isinstance(self, HiveClient), "self must be an instance of HiveClient"
         return Queue.from_dict(
-            self.get(f"/api/core/queues/{queue_id}/"),
+            cast(dict[str, Any], self.get(f"/api/core/queues/{queue_id}/")),
             hive_client=self,
         )
+
+    def create_queue(
+        self,
+        name: str,
+        description: str = "",
+        module: Optional["ModuleLike"] = None,
+        user: Optional["UserLike"] = None,
+    ) -> Queue:
+        from ..client import HiveClient
+
+        assert isinstance(self, HiveClient), "self must be an instance of HiveClient"
+
+        payload: dict[str, str | int | None] = {
+            "name": name,
+            "description": description,
+            "module": None,
+            "user": None,
+        }
+
+        if module is not None:
+            payload["module"] = resolve_item_or_id(module)
+        if user is not None:
+            payload["user"] = resolve_item_or_id(user)
+
+        return Queue.from_dict(
+            self.post("/api/core/queues/", payload),
+            hive_client=self,
+        )
+
+    def delete_queue(self, queue: "QueueLike") -> None:
+        self.delete(f"/api/core/queues/{resolve_item_or_id(queue)}/")

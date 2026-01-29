@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .assignment import Assignment
     from .class_ import Class
     from .program import Program
-    from .queue import Queue
+    from .queue import Queue, QueueLike
 
 T = TypeVar("T", bound="User")
 
@@ -459,6 +459,9 @@ class User(HiveCoreItem):  # pylint: disable=too-many-instance-attributes
     def update(self) -> None:
         """Commit the current state of the user to the server"""
         assert self.hive_client.update_user(self) == self
+
+    def set_queue(self, queue: "QueueLike") -> None:
+        self.hive_client.set_users_queue(self, queue)
 
 
 UserLike = TypeVar("UserLike", User, int)

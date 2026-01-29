@@ -1,4 +1,5 @@
 import re
+from typing import Literal
 
 import pytest
 
@@ -19,71 +20,71 @@ def test_client():
         assert client.hive_url == hive_url
 
 
-def test_get_root_ok(client):
+def test_get_root_ok(client: HiveClient):
     """_get('/') returns HTTP 200 OK."""
-    resp = client._get("/")
+    resp = client._get("/")  # pyright: ignore[reportPrivateUsage]
     resp.raise_for_status()
     assert resp.status_code == 200
 
 
-def test_get_classes(client):
+def test_get_classes(client: HiveClient):
     classes = list(client.get_classes())
     assert len(classes) > 0
     assert all(isinstance(c, Class) for c in classes)
 
 
-def test_get_classes_with_filters(client):
+def test_get_classes_with_filters(client: HiveClient):
     # Name filter
     name_filter = "בינוניים"
     filtered = list(client.get_classes(name=name_filter))
-    assert all(c.name == name_filter for c in filtered)
+    assert all(c.name == name_filter for c in filtered), "Name filter failed"
 
     # Type filter
     type_filter = ClassTypeEnum.STUDENT_GROUP
     filtered_type = list(client.get_classes(type_=type_filter))
-    assert all(c.type_ == type_filter for c in filtered_type)
+    assert all(c.type_ == type_filter for c in filtered_type), "Type filter failed"
 
 
-def test_get_class_by_id(client):
-    cls = next(client.get_classes())
+def test_get_class_by_id(client: HiveClient):
+    cls = next(iter(client.get_classes()))
     fetched = client.get_class(cls.id)
     assert isinstance(fetched, Class)
     assert fetched.id == cls.id
 
 
-def test_get_users(client):
+def test_get_users(client: HiveClient):
     users = list(client.get_users())
     assert len(users) > 0
     assert all(isinstance(u, User) for u in users)
 
 
-def test_get_user_by_id(client):
-    user = next(client.get_users())
+def test_get_user_by_id(client: HiveClient):
+    user = next(iter(client.get_users()))
     fetched = client.get_user(user.id)
     assert isinstance(fetched, User)
     assert fetched.id == user.id
 
 
-def test_get_exercises(client):
+def test_get_exercises(client: HiveClient):
     exercises = list(client.get_exercises())
     assert exercises
     assert all(isinstance(e, Exercise) for e in exercises)
 
 
-def test_get_exercise_by_id(client):
-    exercise = next(client.get_exercises())
+def test_get_exercise_by_id(client: HiveClient):
+    exercise = next(iter(client.get_exercises()))
     fetched = client.get_exercise(exercise.id)
     assert isinstance(fetched, Exercise)
     assert fetched.id == exercise.id
 
 
-def test_get_exercise_fields(client):
-    exercise = next(client.get_exercises())
+def test_get_exercise_fields(client: HiveClient):
+    exercise = next(iter(client.get_exercises()))
     fields = list(client.get_exercise_fields(exercise))
     assert all(isinstance(f, FormField) for f in fields)
 
 
-def test_get_exercise_field_by_id(client):
+def test_get_exercise_field_by_id(client: HiveClient):
     found = False
     for exercise in client.get_exercises():
         for field in client.get_exercise_fields(exercise):
@@ -95,30 +96,30 @@ def test_get_exercise_field_by_id(client):
     assert found, "No exercise fields available to test."
 
 
-def test_get_assignments(client):
+def test_get_assignments(client: HiveClient):
     assignments = list(client.get_assignments())
     assert all(isinstance(a, Assignment) for a in assignments)
     assert all(isinstance(a.exercise, Exercise) for a in assignments)
 
 
 @pytest.mark.xfail(strict=False, reason="No assignments seeded yet")
-def test_get_assignment_by_id(client):
-    assignment = next(client.get_assignments())
+def test_get_assignment_by_id(client: HiveClient):
+    assignment = next(iter(client.get_assignments()))
     fetched = client.get_assignment(assignment.id)
     assert isinstance(fetched, Assignment)
     assert fetched.id == assignment.id
 
 
 @pytest.mark.xfail(strict=False, reason="No assignments seeded yet")
-def test_get_assignment_responses(client):
-    assignment = next(client.get_assignments())
+def test_get_assignment_responses(client: HiveClient):
+    assignment = next(iter(client.get_assignments()))
     responses = list(client.get_assignment_responses(assignment))
     assert all(isinstance(r, AssignmentResponse) for r in responses)
 
 
 @pytest.mark.xfail(strict=False, reason="No assignments seeded yet")
-def test_get_assignment_response_by_id(client):
-    assignment = next(client.get_assignments())
+def test_get_assignment_response_by_id(client: HiveClient):
+    assignment = next(iter(client.get_assignments()))
     responses = list(client.get_assignment_responses(assignment))
     if responses:
         resp = client.get_assignment_response(assignment, responses[0].id)
@@ -134,7 +135,7 @@ def test_get_assignment_response_by_id(client):
         {"user__mentor__id__in": [1], "for_mentees_of": 1},
     ],
 )
-def test_assignments_conflict_mentor_filters(client, kwargs):
+def test_assignments_conflict_mentor_filters(client: HiveClient, kwargs):
     with pytest.raises(AssertionError):
         list(client.get_assignments(**kwargs))
 
@@ -148,7 +149,15 @@ def test_assignments_conflict_mentor_filters(client, kwargs):
         ("user_id", "user__id__in", "for_user"),
     ],
 )
-def test_assignments_conflicts(client, conflict_case):
+def test_assignments_conflicts(
+    client: HiveClient,
+    conflict_case: (
+        Literal["module"]
+        | Literal["subject"]
+        | Literal["user_classes"]
+        | Literal["user_id"]
+    ),
+):
     name, arg1, arg2 = conflict_case
 
     if name in ("module", "subject"):
@@ -159,19 +168,19 @@ def test_assignments_conflicts(client, conflict_case):
             list(client.get_assignments(**{arg1: item, arg2: getattr(item, "id") + 1}))
     elif name == "user_id":
         with pytest.raises(AssertionError):
-            list(client.get_assignments(**{arg1: [1], arg2: 1}))
+            list(client.get_assignments(**{arg1: [5], arg2: 1}))
     else:  # user_classes
         with pytest.raises(AssertionError):
             list(client.get_assignments(**{arg1: 1, arg2: [1, 2]}))
 
 
-def test_get_hive_version(client):
+def test_get_hive_version(client: HiveClient):
     version = client.get_hive_version()
     assert isinstance(version, str)
     assert re.match(r"^\d+\.\d+\.\d+", version)
 
 
-def test_invalid_hive_version_raises(monkeypatch):
+def test_invalid_hive_version_raises(monkeypatch: pytest.MonkeyPatch):
     from pyhive.src.api_versions import LATEST_API_VERSION, MIN_API_VERSION
 
     invalid = "0.0.0-unsupported"
@@ -183,7 +192,7 @@ def test_invalid_hive_version_raises(monkeypatch):
     assert f"{MIN_API_VERSION} .. {LATEST_API_VERSION}" in msg
 
 
-def test_skip_version_check(monkeypatch):
+def test_skip_version_check(monkeypatch: pytest.MonkeyPatch):
     invalid = "0.0.0-unsupported"
     monkeypatch.setattr(HiveClient, "get_hive_version", lambda self: invalid)
     # Should not raise when skip_version_check=True

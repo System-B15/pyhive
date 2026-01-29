@@ -7,13 +7,14 @@ as a mixin on the main HiveClient only.
 
 from typing import TYPE_CHECKING, Iterable, Optional
 
-from ..src.types.module import Module
+from ..src.types.module import Module, ModuleLike
 from .client_shared import ClientCoreMixin
 from .utils import resolve_item_or_id
 
 if TYPE_CHECKING:
     from ..src.types.program import ProgramLike
     from ..src.types.subject import SubjectLike
+
 
 class ModuleClientMixin(ClientCoreMixin):
     """
@@ -77,8 +78,36 @@ class ModuleClientMixin(ClientCoreMixin):
         from ..client import HiveClient
 
         assert isinstance(self, HiveClient), "self must be an instance of HiveClient"
-
+        data = self.get(f"/api/core/course/modules/{module_id}/")
+        assert isinstance(data, dict)
         return Module.from_dict(
-            self.get(f"/api/core/course/modules/{module_id}/"),
+            data,
             hive_client=self,
         )
+
+    def create_module(
+        self,
+        name: str,
+        parent_subject: "SubjectLike",
+        order: int,
+        segel_brief: str = "",
+    ) -> Module:
+        from ..client import HiveClient
+
+        assert isinstance(self, HiveClient), "self must be an instance of HiveClient"
+
+        return Module.from_dict(
+            self.post(
+                "/api/core/course/modules/",
+                {
+                    "name": name,
+                    "parent_subject": resolve_item_or_id(parent_subject),
+                    "order": order,
+                    "segel_brief": segel_brief,
+                },
+            ),
+            hive_client=self,
+        )
+
+    def delete_module(self, module: "ModuleLike") -> None:
+        self.delete(f"/api/core/course/modules/{ resolve_item_or_id(module)}/")

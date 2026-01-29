@@ -1,7 +1,7 @@
 """Defines the Subject type and related functionality for the Hive API Python bindings."""
 
-from collections.abc import Generator, Mapping
-from typing import TYPE_CHECKING, Any, Iterable, Self, TypeVar, cast
+from typing import (TYPE_CHECKING, Any, Generator, Iterable, Mapping, Self,
+                    TypeVar, cast)
 
 from attrs import define, field
 
@@ -158,6 +158,16 @@ class Subject(HiveCoreItem):
 
     def delete(self) -> None:
         self.hive_client.delete_subject(self.id)
+
+    def create_module(
+        self,
+        name: str,
+        order: int,
+        segel_brief: str = "",
+    ) -> "Module":
+        return self.hive_client.create_module(
+            name=name, order=order, segel_brief=segel_brief, parent_subject=self
+        )
 
 
 SubjectLike = TypeVar("SubjectLike", Subject, int)
