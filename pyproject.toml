@@ -1,13 +1,13 @@
 [project]
 name = "PyHiveLMS"
-version = "1.1.0"
+version = "1.1.1"
 description = "Python bindings for Hive"
 authors = [
     { name = "Michael K. Steinberg", email = "m.kuper.steinberg@gmail.com" },
 ]
 requires-python = ">=3.11.0"
 dependencies = [
-    "httpx",
+    "httpx>=0.28.1",
     "python-dateutil>=2.9.0",
     "attrs>=25.4.0",
     "typer==0.20.0",
