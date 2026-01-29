@@ -17,6 +17,7 @@ from pyhive.src.types.program import Program
 from pyhive.src.types.queue import Queue
 from pyhive.src.types.subject import Subject
 from pyhive.src.types.user import User
+from pyhive.src.types.enums.class_type_enum import ClassTypeEnum
 
 __all__ = [
     "Assignment",
@@ -31,5 +32,6 @@ __all__ = [
     "ClearanceEnum",
     "GenderEnum",
     "StatusEnum",
+    "ClassTypeEnum",
     "Queue",
 ]
